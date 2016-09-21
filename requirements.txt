@@ -1,0 +1,4 @@
+boto==2.42.0
+click==6.6
+pytest==3.0.2
+PyYAML==3.12
