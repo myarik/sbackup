@@ -1,0 +1,10 @@
+- source_dirs:
+  - '/tmp/dir1'
+  - '/tmp/dir2'
+- backends:
+  - s3:
+      id: 'Sdd3qsdasd'
+      key: 'asd1123sds'
+      backet: 'test'
+  - ssh:
+      host: 'test'
