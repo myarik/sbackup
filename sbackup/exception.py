@@ -14,3 +14,7 @@ class SBackupException(Exception):
 
     def __repr__(self):
         return self.message
+
+
+class SBackupValidationError(SBackupException):
+    pass

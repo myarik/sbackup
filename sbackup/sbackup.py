@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, unicode_literals)
+
 import os
 import stat
+
 from yaml.error import YAMLError
 
+from .tasks import TASK_CLASSES
+from .display import Display
 from .exception import SBackupException
 from .utils import load_config
-from .display import Display
 
 
 class SBackupCLI(object):
-
     def __init__(self, filename):
         self.filename = filename
         self.display = Display()
@@ -37,9 +39,17 @@ class SBackupCLI(object):
             raise SBackupException(
                 "No values found in file %s" % self.filename
             )
-        #[{'source_dirs': ['/tmp/dir1', '/tmp/dir2']},
-         #{'backends': [{'s3': {'key': 'asd1123sds', 'id': 'Sdd3qsdasd', 'backet': 'test'}}, {'ssh': {'host': 'test'}}]}]
-
-
-
-
+        for task in config:
+            task_type = task['type']
+            if task_type not in TASK_CLASSES:
+                # TODO this to display in console
+                self.display.log(
+                    "Can't work with backup's type %s" % task['type'],
+                    stderr=True, logger=self.logger
+                )
+                continue
+            handler = TASK_CLASSES[task_type]
+            handler.create_task(task)
+            # handler.validate()
+                # [{'source_dirs': ['/tmp/dir1', '/tmp/dir2']},
+                # named{'backends': [{'s3': {'key': 'asd1123sds', 'id': 'Sdd3qsdasd', 'backet': 'test'}}, {'ssh': {'host': 'test'}}]}]
