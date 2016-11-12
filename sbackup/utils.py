@@ -14,6 +14,7 @@ def stringc(text, color):
 
     return u"\033[%sm%s\033[0m" % (codeCodes[color], text)
 
+
 def load_config(filename: str):
     """
     Load yml config

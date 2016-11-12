@@ -23,6 +23,3 @@ class DirBackupTask(Task):
         for source_dir in attr:
             validate_dir(source_dir)
         return attr
-
-    def validate_backends(self, attr):
-        pass
