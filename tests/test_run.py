@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-from __future__ import (absolute_import, division, print_function, unicode_literals)
-from sbackup.sbackup import SBackupCLI, SBackupException
+import os
+
 import pytest
+from sbackup.sbackup import SBackupCLI, SBackupException
 
 
 @pytest.fixture(scope='session')
@@ -15,5 +16,10 @@ def test_validate_setting_file(fake_dir):
     with pytest.raises(SBackupException):
         obj.run()
     obj = SBackupCLI(fake_dir.dirname)
+    with pytest.raises(SBackupException):
+        obj.run()
+    here = os.path.dirname(__file__)
+    fconfig = os.path.join(here, 'fixture/fake_config.yml')
+    obj = SBackupCLI(fconfig)
     with pytest.raises(SBackupException):
         obj.run()
