@@ -3,13 +3,13 @@ from unittest import mock
 
 from botocore.exceptions import ClientError
 from sbackup.exception import SBackupValidationError
-from sbackup.source_backends.aws import S3Backend, S3BackendException
+from sbackup.dest_backend.aws import S3Backend, S3BackendException
 
 import pytest
 import os
 
 
-@mock.patch('sbackup.source_backends.aws.Session.client')
+@mock.patch('sbackup.dest_backend.aws.Session.client')
 def test_validate_login_aws_backend(session_mock):
     def side_effect(value, *args):
         caller = mock.Mock()
@@ -23,8 +23,8 @@ def test_validate_login_aws_backend(session_mock):
         obj.validate()
 
 
-@mock.patch('sbackup.source_backends.aws.Session.client')
-@mock.patch('sbackup.source_backends.aws.Session.resource')
+@mock.patch('sbackup.dest_backend.aws.Session.client')
+@mock.patch('sbackup.dest_backend.aws.Session.resource')
 def test_validate_aws_bucket(session_mock, *args):
     def side_effect(value, ):
         if value == 'sts':
@@ -45,8 +45,8 @@ def test_validate_aws_bucket(session_mock, *args):
         obj = S3Backend('FAKE_KEY_ID', 'FAKE_KEY', 'backup')
         obj.validate()
 
-@mock.patch('sbackup.source_backends.aws.Session.resource')
-@mock.patch('sbackup.source_backends.aws.Session.client')
+@mock.patch('sbackup.dest_backend.aws.Session.resource')
+@mock.patch('sbackup.dest_backend.aws.Session.client')
 def test_validate_aws_upload(session_mock, resourse_mock):
     session_mock.client.get_caller_identity.return_value = True
     resourse_mock.meta.client.head_bucket.return_value = True
@@ -58,8 +58,8 @@ def test_validate_aws_upload(session_mock, resourse_mock):
         obj.upload(fake_path)
 
 
-@mock.patch('sbackup.source_backends.aws.Session.resource')
-@mock.patch('sbackup.source_backends.aws.Session.client')
+@mock.patch('sbackup.dest_backend.aws.Session.resource')
+@mock.patch('sbackup.dest_backend.aws.Session.client')
 def test_validate_aws_download(session_mock, resourse_mock):
     session_mock.client.get_caller_identity.return_value = True
     resourse_mock.meta.client.head_bucket.return_value = True
@@ -74,6 +74,6 @@ def test_validate_aws_download(session_mock, resourse_mock):
             m_os.return_value = False
             obj.download('test.txt', '/tmp')
     error = ClientError({'Error': {'Code': 404}}, 'Error')
-    with mock.patch("sbackup.source_backends.aws.Session.resource", side_effect=error):
+    with mock.patch("sbackup.dest_backend.aws.Session.resource", side_effect=error):
         with pytest.raises(S3BackendException):
             obj.download('test.txt', '/tmp')

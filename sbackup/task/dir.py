@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
-from __future__ import (absolute_import, division, print_function, unicode_literals)
-
 import collections
 
 from sbackup.exception import SBackupValidationError
 from sbackup.utils import validate_dir
 
-from .base import Task
+from .base import Task, Field, DestField
+
+# TODO tar
+# https://docs.python.org/3/library/tarfile.html
+# http://stackoverflow.com/questions/2032403/how-to-create-full-compressed-tar-file-using-python
 
 
 class DirBackupTask(Task):
-    _fields = (
-        'source_dirs',
-        'backends'
-    )
-
-    # TODO think about not required fields (tmp_dir, backup_name)
+    source_dirs = Field()
+    dest_backends = DestField()
+    backup_name = Field(default='asa')
+    tmp_dir = Field(default='/tmp')
 
     def validate_source_dirs(self, attr):
         if not isinstance(attr, collections.Iterable):
@@ -23,3 +23,5 @@ class DirBackupTask(Task):
         for source_dir in attr:
             validate_dir(source_dir)
         return attr
+
+

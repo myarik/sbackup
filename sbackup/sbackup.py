@@ -6,7 +6,7 @@ import stat
 
 from yaml.error import YAMLError
 
-from .tasks import TASK_CLASSES
+from .task import TASK_CLASSES
 from .display import Display
 from .exception import SBackupException
 from .utils import load_config

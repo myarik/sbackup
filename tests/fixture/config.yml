@@ -4,9 +4,9 @@
     - '/tmp/dir1'
     - '/tmp/dir2'
   backends:
-    - s3:
-       - id: 'Sdd3qsdasd'
-       - key: 'asd1123sds'
+    s3:
+       - access_key_id: 'Sdd3qsdasd'
+       - secret_access_key: 'asd1123sds'
        - backet: 'test'
-    - ssh:
+    ssh:
        - host: 'test'

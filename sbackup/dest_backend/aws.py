@@ -48,7 +48,7 @@ class S3Backend(BackendWrapper):
 
     """
 
-    def __init__(self, access_key_id, secret_access_key, bucket):
+    def __init__(self, access_key_id, secret_access_key, bucket, *args, **kwargs):
         self.access_key_id = access_key_id
         self.secret_access_key = secret_access_key
         self.bucket_name = bucket
