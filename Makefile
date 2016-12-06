@@ -1,5 +1,5 @@
 test:
-	py.test -q ./tests/ --capture=no
+	py.test -q ./tests/ --capture=no --tb=native
 
 test_style:
 	py.test -c setup.cfg --pep8 --junitxml=reports/pep8.report

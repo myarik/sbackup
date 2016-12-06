@@ -2,10 +2,10 @@ from .aws import S3Backend
 
 __all__ = (
     'S3Backend',
-    'DEST_BACKENDS'
+    'DST_BACKENDS'
 )
 
-_dest_backends = (
+_dst_backends = (
     ('s3', S3Backend),
 )
-DEST_BACKENDS = dict(_dest_backends)
+DST_BACKENDS = dict(_dst_backends)

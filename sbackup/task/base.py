@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from sbackup.exception import SBackupValidationError
-from sbackup.dest_backend import DEST_BACKENDS
+from sbackup.dest_backend import DST_BACKENDS
 
 
 class Field(object):
@@ -14,7 +14,7 @@ class Field(object):
         if instance is None:
             return self
         value = getattr(instance, self.internal_name, self.default)
-        if value is None and self.required:
+        if value is None or value == list() and self.required:
             raise AttributeError("The field %s is required" % self.name)
         return value
 
@@ -22,19 +22,16 @@ class Field(object):
         setattr(instance, self.internal_name, value)
 
 
-class DestField(Field):
-    def __get__(self, instance, owner):
-        value = super(DestField, self).__get__(instance, owner)
-        if value == list():
-            raise AttributeError("The field %s is required" % self.name)
-        return value
+class Backends(Field):
 
     def __set__(self, instance, value):
         if not isinstance(value, dict):
-            raise SBackupValidationError('The DestField has to be a dict')
+            raise SBackupValidationError(
+                'The %s has to be a dict' % self.__class__.__name__
+            )
         result = []
         for backend_name, backend_conf in value.items():
-            obj = DEST_BACKENDS[backend_name]
+            obj = DST_BACKENDS[backend_name]
             if obj:
                 try:
                     backend = obj(**backend_conf)

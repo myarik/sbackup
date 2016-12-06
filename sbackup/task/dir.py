@@ -4,7 +4,7 @@ import collections
 from sbackup.exception import SBackupValidationError
 from sbackup.utils import validate_dir
 
-from .base import Task, Field, DestField
+from .base import Task, Field, Backends
 
 # TODO tar
 # https://docs.python.org/3/library/tarfile.html
@@ -13,7 +13,7 @@ from .base import Task, Field, DestField
 
 class DirBackupTask(Task):
     source_dirs = Field()
-    dest_backends = DestField()
+    dst_backends = Backends()
     backup_name = Field(default='asa')
     tmp_dir = Field(default='/tmp')
 
