@@ -1,6 +1,6 @@
 - task: Backup dirs
   type: 'dir'
-  source_dirs:
+  sources:
     - '/tmp/dir1'
     - '/tmp/dir2'
   backends:

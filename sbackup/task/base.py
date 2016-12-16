@@ -99,3 +99,6 @@ class Task(object, metaclass=TaskMetaclass):
                 continue
             setattr(obj, field, value)
         return obj
+
+    def run(self):
+        return NotImplementedError

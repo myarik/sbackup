@@ -51,5 +51,5 @@ class SBackupCLI(object):
             handler = TASK_CLASSES[task_type]
             handler.create_task(task)
             # handler.validate()
-                # [{'source_dirs': ['/tmp/dir1', '/tmp/dir2']},
+                # [{'sources': ['/tmp/dir1', '/tmp/dir2']},
                 # named{'backends': [{'s3': {'key': 'asd1123sds', 'id': 'Sdd3qsdasd', 'backet': 'test'}}, {'ssh': {'host': 'test'}}]}]

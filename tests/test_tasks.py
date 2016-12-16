@@ -20,7 +20,7 @@ def test_validation():
     with pytest.raises(SBackupValidationError):
         obj = DirBackupTask.create_task({
             'type': 'dir',
-            'source_dirs': ['/test/fake_dir/aXsTrasL'],
+            'sources': ['/test/fake_dir/aXsTrasL'],
             'dest_backends': {
                 's3': {
                     'access_key_id': 'asd1123sds',
@@ -37,7 +37,7 @@ def test_backend_validation(fake_dir):
     with pytest.raises(SBackupValidationError):
         obj = DirBackupTask.create_task({
             'type': 'dir',
-            'source_dirs': ['/test/fake_dir/aXsTrasL'],
+            'sources': ['/test/fake_dir/aXsTrasL'],
             'dst_backends': {
                 's3': {
                     'secret_access_key': 'Sdd3qsdasd',
@@ -49,7 +49,7 @@ def test_backend_validation(fake_dir):
     with mock.patch('sbackup.dest_backend.aws.S3Backend.validate') as mock_validate:
         obj = DirBackupTask.create_task({
             'type': 'dir',
-            'source_dirs': [fake_dir.dirname, ],
+            'sources': [fake_dir.dirname, ],
             'dst_backends': {
                 's3': {
                     'access_key_id': 'asd1123sds',
