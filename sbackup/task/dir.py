@@ -9,10 +9,6 @@ from sbackup.exception import SBackupValidationError
 
 from .base import Task, Field, Backends
 
-# TODO tar
-# https://docs.python.org/3/library/tarfile.html
-# http://stackoverflow.com/questions/2032403/how-to-create-full-compressed-tar-file-using-python
-
 
 class DirBackupTask(Task):
     sources = Field()
