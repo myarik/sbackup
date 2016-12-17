@@ -2,6 +2,7 @@
 from unittest import mock
 
 import pytest
+
 from sbackup.exception import SBackupValidationError
 from sbackup.task import DirBackupTask
 
@@ -12,7 +13,7 @@ def fake_dir(tmpdir_factory):
     return dir
 
 
-def test_validation():
+def test_source_validation():
     with pytest.raises(AttributeError):
         obj = DirBackupTask.create_task({'type': 'dir'})
         obj.validate()

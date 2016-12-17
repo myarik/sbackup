@@ -14,7 +14,7 @@ class Field(object):
         if instance is None:
             return self
         value = getattr(instance, self.internal_name, self.default)
-        if value is None or value == list() and self.required:
+        if self.required and (value is None or value == list()):
             raise AttributeError("The field %s is required" % self.name)
         return value
 

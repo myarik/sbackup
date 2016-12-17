@@ -4,6 +4,8 @@ import os
 import tempfile
 import tarfile
 import shutil
+import datetime
+import concurrent.futures
 
 from sbackup.exception import SBackupValidationError
 
@@ -13,8 +15,11 @@ from .base import Task, Field, Backends
 class DirBackupTask(Task):
     sources = Field()
     dst_backends = Backends()
-    backup_name = Field(default='asa')
+    backup_name = Field(default='backup')
     tmp_dir = Field(required=False)
+
+    _executor_cls = concurrent.futures.ThreadPoolExecutor
+    _max_workers = 2
 
     def validate_sources(self, attr):
         if not isinstance(attr, collections.Iterable):
@@ -45,7 +50,10 @@ class DirBackupTask(Task):
         Raises:
             SBackupValidationError: Exception if backup already exists.
         """
-        output_filename = os.path.join(tar_dir, self.backup_name)
+        output_filename = os.path.join(tar_dir, "{name}-{time}.tar.gz".format(
+            name=self.backup_name,
+            time=datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')
+        ))
         try:
             with tarfile.open(output_filename, "x:gz") as tar:
                 for source in self.sources:
@@ -54,19 +62,28 @@ class DirBackupTask(Task):
             raise SBackupValidationError("Can't create a tarfile")
         return output_filename
 
-    def run(self):
+    @staticmethod
+    def upload_backup(backend, filename):
+        backend.upload(filename)
+        return "Uploaded"
+
+    def create(self):
         if self.tmp_dir:
             tar_dir = tempfile.mkdtemp(dir=self.tmp_dir)
         else:
             tar_dir = tempfile.mkdtemp(dir=self.tmp_dir)
         try:
             backup_file = self.make_tarfile(tar_dir)
-            # send to S3
-            pass
+            with self._executor_cls(max_workers=self._max_workers) as executor:
+                future_to_upload = [executor.submit(self.upload_backup, backend, backup_file)
+                                    for backend in self.dst_backends]
+                for future in concurrent.futures.as_completed(future_to_upload):
+                    # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.as_completed
+                    data = future.result()
+                    print(data)
         finally:
             shutil.rmtree(tar_dir)
 
-
-        for source in self.sources:
-
-        return NotImplementedError
+    def run(self):
+        self.create()
+        # TODO remove old backup
