@@ -173,3 +173,6 @@ class S3Backend(BackendWrapper):
                     logger.error("Can't delete a object from S3", exc_info=True)
                     raise S3BackendException("Can't delete a object: %s" % error)
                 break
+
+    def __repr__(self):
+        return "S3"
