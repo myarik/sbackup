@@ -29,7 +29,7 @@ class S3Backend(BackendWrapper):
 
     Usage::
 
-        from sbackup.source_backends.aws import S3Backend
+        from sbackup.dest_backend.aws import S3Backend
         s3 = S3Backend('mykey', 'mysecretkey', 'mybucket')
         s3.validate()
 
@@ -162,6 +162,14 @@ class S3Backend(BackendWrapper):
         except ClientError as error:
             logger.error("Can't get objects from S3", exc_info=True)
             raise S3BackendException("%s" % error)
+
+    @validated
+    def last_modified(self):
+        """
+        A generator which yields filename and last modified date
+        """
+        for item in self.bucket.objects.all():
+            yield item.key, item.last_modified
 
     @validated
     def delete(self, filename):
