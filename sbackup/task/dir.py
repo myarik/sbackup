@@ -39,6 +39,17 @@ class DirBackupTask(Task):
         }
         obj = DirBackupTask.create_task(data)
         obj.create() -- Create a backup and put it in dst backends
+
+    Debug::
+
+        import logging
+        logging.basicConfig()
+        logger = logging.getLogger('sbackup.task.dir')
+        logger.setLevel(logging.DEBUG)
+
+        from sbackup.task import DirBackupTask
+        ...
+
     """
     sources = Field()
     dst_backends = Backends()
