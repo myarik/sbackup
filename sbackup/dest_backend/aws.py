@@ -172,7 +172,7 @@ class S3Backend(BackendWrapper):
             yield item.key, item.last_modified
 
     @validated
-    def delete(self, filename):
+    def delete_file(self, filename):
         for item in self._ls():
             if item.key == filename:
                 try:
@@ -181,6 +181,18 @@ class S3Backend(BackendWrapper):
                     logger.error("Can't delete a object from S3", exc_info=True)
                     raise S3BackendException("Can't delete a object: %s" % error)
                 break
+
+    @validated
+    def delete(self, file_list):
+        if not isinstance(file_list, list):
+            raise S3BackendException("file_list must be a list object")
+        for item in self._ls():
+            if item.key in file_list:
+                try:
+                    item.delete()
+                except ClientError as error:
+                    logger.error("Can't delete a object from S3", exc_info=True)
+                    raise S3BackendException("Can't delete a object: %s" % error)
 
     def __repr__(self):
         return "S3"

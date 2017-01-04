@@ -69,11 +69,13 @@ class Task(object, metaclass=TaskMetaclass):
         errors = dict()
         for field in self.get_fields():
             validate_method = getattr(self, 'validate_' + field, None)
-            try:
-                if validate_method and callable(validate_method):
-                    validate_method(getattr(self, field))
-            except SBackupValidationError as error:
-                errors[field] = error.message
+            attr = getattr(self, field)
+            if attr is not None:
+                try:
+                    if validate_method and callable(validate_method):
+                        setattr(self, field, validate_method(attr))
+                except SBackupValidationError as error:
+                    errors[field] = error.message
         if errors:
             raise SBackupValidationError(
                 message="Can't validate fields: %s" % (','.join(errors.keys())),

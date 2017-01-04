@@ -35,7 +35,8 @@ class DirBackupTask(Task):
                     'secret_access_key': 'access_key',
                     'bucket': 'backup'
                 }
-            }
+            },
+            'retention_period': '7'
         }
         obj = DirBackupTask.create_task(data)
         obj.create() -- Create a backup and put it in dst backends
@@ -55,6 +56,7 @@ class DirBackupTask(Task):
     dst_backends = Backends()
     backup_name = Field(default='backup')
     tmp_dir = Field(required=False)
+    retention_period = Field(required=False)
 
     _executor_cls = concurrent.futures.ThreadPoolExecutor
     _max_workers = 2
@@ -78,6 +80,15 @@ class DirBackupTask(Task):
         if not os.access(attr, os.R_OK):
             logger.error("User don't have access to read a %s" % attr)
             raise SBackupValidationError("User don't have access to read a %s" % attr)
+        return attr
+
+    def validate_retention_period(self, attr):
+        try:
+            attr = int(attr)
+        except ValueError:
+            raise SBackupValidationError("retention_period must be an integer")
+        if attr <= 0:
+            raise SBackupValidationError("retention_period must be greater zero")
         return attr
 
     def make_tarfile(self, tar_dir):
@@ -135,6 +146,44 @@ class DirBackupTask(Task):
         finally:
             shutil.rmtree(tar_dir)
 
+    @staticmethod
+    def _remove_old_files(retention_date, backend):
+        """
+        Remove oldest file in a backend
+        """
+        files_list = [name for name, last_modified in backend.last_modified()
+                      if last_modified.date() < retention_date]
+        if not files_list:
+            logger.debug("Don't have a files to remove")
+            return
+        logger.debug("Start remove files {file} from {backend}".format(
+            file=files_list,
+            backend=str(backend)
+        ))
+        backend.delete(files_list)
+        return "The {files} was removed from {backend}".format(
+            files=files_list,
+            backend=str(backend)
+        )
+
+    def remove_old_files(self):
+        """
+        Remove files older a retention period.
+        If a value retention_period don't do nothing
+        """
+        if self.retention_period is None:
+            logger.debug("The retention_period doesn't set")
+            return
+        retention_date = datetime.date.today() - datetime.timedelta(self.retention_period)
+        with self._executor_cls(max_workers=self._max_workers) as executor:
+            future_to_remove = [executor.submit(self._remove_old_files, retention_date, backend)
+                                for backend in self.dst_backends]
+            for future in concurrent.futures.as_completed(future_to_remove):
+                # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.as_completed
+                result = future.result()
+                logger.info(result)
+
     def run(self):
+        self.validate()
         self.create()
-        # TODO remove old backup
+        self.remove_old_files()
