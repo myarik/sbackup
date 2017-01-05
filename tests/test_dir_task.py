@@ -22,7 +22,7 @@ def test_source_validation():
         obj = DirBackupTask.create_task({
             'type': 'dir',
             'sources': ['/test/fake_dir/aXsTrasL'],
-            'dest_backends': {
+            'dst_backends': {
                 's3': {
                     'access_key_id': 'asd1123sds',
                     'secret_access_key': 'Sdd3qsdasd',

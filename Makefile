@@ -1,4 +1,7 @@
 test:
+	py.test -q ./tests/ --tb=native
+
+test_debug:
 	py.test -q ./tests/ --capture=no --tb=native
 
 test_style:
