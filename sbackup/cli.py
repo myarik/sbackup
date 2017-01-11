@@ -1,25 +1,38 @@
 # -*- coding: utf-8 -*-
-from __future__ import (absolute_import, division, print_function, unicode_literals)
-
 import click
 import sys
+import logging
 
 from . import SBackupCLI, SBackupException
-from .display import Display
+
+logger = logging.getLogger(__name__)
+
+LOG_FORMAT = "%(asctime)s %(levelname)s %(message)s"
+
+
+@click.group()
+def main():
+    pass
 
 
 @click.command()
-@click.argument('filename', nargs=1)
-def main(filename):
-    """
-    Args:
-        filename(str): A filename
-    """
-    cli = SBackupCLI(filename)
-    display = Display()
+@click.option('-d', '--debug', is_flag=True, help='increase output verbosity')
+@click.argument('config_file', nargs=1)
+def create(debug, config_file):
+    if debug:
+        log_level = logging.DEBUG
+    else:
+        log_level = logging.INFO
+    logging.basicConfig(
+        level=log_level,
+        format=LOG_FORMAT
+    )
+    cli = SBackupCLI(config_file)
     try:
         cli.run()
     except SBackupException as error:
-        display.error(error.message)
+        logger.error(error.message)
         sys.exit(2)
 
+
+main.add_command(create)

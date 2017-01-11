@@ -3,25 +3,24 @@ from __future__ import (absolute_import, division, print_function, unicode_liter
 
 import os
 import stat
+import logging
 
 from yaml.error import YAMLError
 
 from .task import TASK_CLASSES
-from .display import Display
 from .exception import SBackupException
 from .utils import load_config
 
 
 class SBackupCLI(object):
-    def __init__(self, filename):
+    def __init__(self, filename, logger=None):
         self.filename = filename
-        self.display = Display()
-        self.logger = None
+        self.logger = logger or logging.getLogger(__name__)
 
     def run(self):
         if not os.path.exists(self.filename):
             raise SBackupException(
-                "the config: %s could not be found" % self.filename
+                "Can't find a config file \"%s\"" % self.filename
             )
         if not (os.path.isfile(self.filename) or stat.S_ISFIFO(os.stat(self.filename).st_mode)):
             raise SBackupException(
@@ -31,7 +30,7 @@ class SBackupCLI(object):
             config = load_config(self.filename)
         except YAMLError as error:
             msg = "Can't load config file: %s" % error
-            self.display.log(msg, stderr=True, logger=self.logger)
+            self.logger.error(msg)
             raise SBackupException(
                 "the config: %s does not a yaml file" % self.filename
             )
@@ -42,11 +41,7 @@ class SBackupCLI(object):
         for task in config:
             task_type = task['type']
             if task_type not in TASK_CLASSES:
-                # TODO this to display in console
-                self.display.log(
-                    "Can't work with backup's type %s" % task['type'],
-                    stderr=True, logger=self.logger
-                )
+                self.logger.warning("Can't work with backup's type %s" % task['type'])
                 continue
             handler = TASK_CLASSES[task_type]
             handler.create_task(task)
