@@ -22,24 +22,23 @@ class Field(object):
         setattr(instance, self.internal_name, value)
 
 
-class Backends(Field):
+class Backend(Field):
 
     def __set__(self, instance, value):
         if not isinstance(value, dict):
             raise SBackupValidationError(
                 'The %s has to be a dict' % self.__class__.__name__
             )
-        result = []
+        backend = None
         for backend_name, backend_conf in value.items():
             obj = DST_BACKENDS[backend_name]
-            if obj:
-                try:
-                    backend = obj(**backend_conf)
-                except TypeError:
-                    raise SBackupValidationError('Configuration is incorrect')
-                backend.validate()
-                result.append(backend)
-        setattr(instance, self.internal_name, result)
+            try:
+                backend = obj(**backend_conf)
+            except TypeError:
+                raise SBackupValidationError('Incorrect a backend configuration')
+        if backend is None:
+            raise SBackupValidationError('Incorrect a backend configuration')
+        setattr(instance, self.internal_name, backend)
 
 
 class TaskMetaclass(type):
@@ -74,6 +73,8 @@ class Task(object, metaclass=TaskMetaclass):
                 try:
                     if validate_method and callable(validate_method):
                         setattr(self, field, validate_method(attr))
+                    if callable(getattr(attr, 'validate', None)):
+                        attr.validate()
                 except SBackupValidationError as error:
                     errors[field] = error.message
         if errors:

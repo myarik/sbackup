@@ -27,7 +27,7 @@ class SBackupCLI(object):
             obj.validate()
             obj.create()
 
-    def list(self):
+    def show(self):
         return NotImplementedError
 
     def restore(self, filename):

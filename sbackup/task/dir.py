@@ -5,12 +5,11 @@ import tempfile
 import tarfile
 import shutil
 import datetime
-import concurrent.futures
 import logging
 
 from sbackup.exception import SBackupValidationError
 
-from .base import Task, Field, Backends
+from .base import Task, Field, Backend
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +19,7 @@ class DirBackupTask(Task):
     The task for backup dirs
     Attributes:
        sources(list): A list of dirs
-       dst_backends(dict): A dict with backends
+       dst_backend(dict): A backend settings
        backup_name(basestring): Default is backup
        tmp_dir(basestring): A tmp path, default is TMPDIR
 
@@ -29,7 +28,7 @@ class DirBackupTask(Task):
         from sbackup.task import DirBackupTask
         data = {
             'sources': ['/var/www/site1', '/var/www/site2'],
-            'dst_backends': {
+            'dst_backend': {
                 's3': {
                     'access_key_id': 'key_id',
                     'secret_access_key': 'access_key',
@@ -53,13 +52,10 @@ class DirBackupTask(Task):
 
     """
     sources = Field()
-    dst_backends = Backends()
+    dst_backend = Backend()
     backup_name = Field(default='backup')
     tmp_dir = Field(required=False)
     retention_period = Field(required=False)
-
-    _executor_cls = concurrent.futures.ThreadPoolExecutor
-    _max_workers = 2
 
     def validate_sources(self, attr):
         if not isinstance(attr, collections.Iterable):
@@ -117,17 +113,16 @@ class DirBackupTask(Task):
             raise SBackupValidationError("Can't create a tarfile")
         return output_filename
 
-    @staticmethod
-    def upload_backup(backend, filename):
+    def upload_backup(self, filename):
         logger.debug("Start upload the file {file} to {backend}".format(
             file=filename,
-            backend=str(backend)
+            backend=str(self.dst_backend)
         ))
-        backend.upload(filename)
-        return "The {file} was uploaded to {backend}".format(
+        self.dst_backend.upload(filename)
+        logger.info("The {file} was uploaded to {backend}".format(
             file=filename,
-            backend=str(backend)
-        )
+            backend=str(self.dst_backend)
+        ))
 
     def create(self):
         if self.tmp_dir:
@@ -136,34 +131,27 @@ class DirBackupTask(Task):
             tar_dir = tempfile.mkdtemp()
         try:
             backup_file = self.make_tarfile(tar_dir)
-            with self._executor_cls(max_workers=self._max_workers) as executor:
-                future_to_upload = [executor.submit(self.upload_backup, backend, backup_file)
-                                    for backend in self.dst_backends]
-                for future in concurrent.futures.as_completed(future_to_upload):
-                    # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.as_completed
-                    result = future.result()
-                    logger.info(result)
+            self.upload_backup(backup_file)
         finally:
             shutil.rmtree(tar_dir)
 
-    @staticmethod
-    def _remove_old_files(retention_date, backend):
+    def _remove_old_files(self, retention_date):
         """
         Remove oldest file in a backend
         """
-        files_list = [name for name, last_modified in backend.last_modified()
+        files_list = [name for name, last_modified in self.dst_backend.last_modified()
                       if last_modified.date() < retention_date]
         if not files_list:
             logger.debug("Don't have a files to remove")
             return
         logger.debug("Start remove files {file} from {backend}".format(
             file=files_list,
-            backend=str(backend)
+            backend=str(self.dst_backend)
         ))
-        backend.delete(files_list)
+        self.dst_backend.delete(files_list)
         return "The {files} was removed from {backend}".format(
             files=files_list,
-            backend=str(backend)
+            backend=str(self.dst_backend)
         )
 
     def remove_old_files(self):
@@ -175,13 +163,7 @@ class DirBackupTask(Task):
             logger.debug("The retention_period doesn't set")
             return
         retention_date = datetime.date.today() - datetime.timedelta(self.retention_period)
-        with self._executor_cls(max_workers=self._max_workers) as executor:
-            future_to_remove = [executor.submit(self._remove_old_files, retention_date, backend)
-                                for backend in self.dst_backends]
-            for future in concurrent.futures.as_completed(future_to_remove):
-                # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.as_completed
-                result = future.result()
-                logger.info(result)
+        self._remove_old_files(retention_date)
 
     def run(self):
         self.validate()
