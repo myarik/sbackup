@@ -27,7 +27,7 @@ Use a config file
       sources:
         - /var/www/site1
         - /var/www/site2
-      dst_backends:
+      dst_backend:
         s3:
            access_key_id: YOUR_ACCESS_KEY
            secret_access_key: YOUR_SECRET_KEY

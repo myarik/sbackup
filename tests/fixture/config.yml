@@ -3,7 +3,7 @@
   sources:
     - '/tmp/dir1'
     - '/tmp/dir2'
-  dst_backends:
+  dst_backend:
     s3:
        access_key_id: 'Sdd3qsdasd'
        secret_access_key: 'asd1123sds'

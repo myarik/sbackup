@@ -22,7 +22,7 @@ def test_source_validation():
         obj = DirBackupTask.create_task({
             'type': 'dir',
             'sources': ['/test/fake_dir/aXsTrasL'],
-            'dst_backends': {
+            'dst_backend': {
                 's3': {
                     'access_key_id': 'asd1123sds',
                     'secret_access_key': 'Sdd3qsdasd',
@@ -39,7 +39,7 @@ def test_backend_validation(fake_dir):
         obj = DirBackupTask.create_task({
             'type': 'dir',
             'sources': ['/test/fake_dir/aXsTrasL'],
-            'dst_backends': {
+            'dst_backend': {
                 's3': {
                     'secret_access_key': 'Sdd3qsdasd',
                     'bucket': 'test'
@@ -51,7 +51,7 @@ def test_backend_validation(fake_dir):
         obj = DirBackupTask.create_task({
             'type': 'dir',
             'sources': [fake_dir.dirname, ],
-            'dst_backends': {
+            'dst_backend': {
                 's3': {
                     'access_key_id': 'asd1123sds',
                     'secret_access_key': 'Sdd3qsdasd',
