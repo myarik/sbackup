@@ -6,9 +6,10 @@ import stat
 import logging
 import yaml
 
-
 from .task import TASK_CLASSES
 from .exception import SBackupException
+
+from sbackup.dest_backend import get_backend
 
 
 class SBackupCLI(object):
@@ -27,8 +28,17 @@ class SBackupCLI(object):
             obj.validate()
             obj.create()
 
-    def show(self):
-        return NotImplementedError
+    @staticmethod
+    def ls(backend_name, backend_conf):
+        """
+        Return generator
+        """
+        try:
+            backend = get_backend(backend_name, backend_conf)
+        except TypeError:
+            raise SBackupException('Incorrect a backend configuration')
+        for item in backend:
+            yield item
 
     def restore(self, filename):
         return NotImplementedError

@@ -150,7 +150,6 @@ class S3Backend(BackendWrapper):
                     "Can't download the file %s, error: %s" % (src_filename, error)
                 )
 
-    @validated
     def __iter__(self):
         for item in self._ls():
             yield item.key

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from sbackup.exception import SBackupValidationError
-from sbackup.dest_backend import DST_BACKENDS
+from sbackup.dest_backend import get_backend
 
 
 class Field(object):
@@ -29,13 +29,12 @@ class Backend(Field):
             raise SBackupValidationError(
                 'The %s has to be a dict' % self.__class__.__name__
             )
-        backend = None
-        for backend_name, backend_conf in value.items():
-            obj = DST_BACKENDS[backend_name]
-            try:
-                backend = obj(**backend_conf)
-            except TypeError:
-                raise SBackupValidationError('Incorrect a backend configuration')
+        data = value.copy()
+        backend_name, backend_conf = data.popitem()
+        try:
+            backend = get_backend(backend_name, backend_conf)
+        except TypeError:
+            raise SBackupValidationError('Incorrect a backend configuration')
         if backend is None:
             raise SBackupValidationError('Incorrect a backend configuration')
         setattr(instance, self.internal_name, backend)
