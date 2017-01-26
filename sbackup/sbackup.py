@@ -4,6 +4,7 @@ from __future__ import (absolute_import, division, print_function, unicode_liter
 import os
 import stat
 import logging
+import datetime
 import yaml
 
 from .task import TASK_CLASSES
@@ -13,41 +14,44 @@ from sbackup.dest_backend import get_backend
 
 
 class SBackupCLI(object):
-    def __init__(self, tasks, logger=None):
+    def __init__(self, logger=None):
         self.logger = logger or logging.getLogger(__name__)
-        self.tasks = tasks
 
-    def create(self):
-        for task in self.tasks:
+    def create(self, tasks):
+        for task in tasks:
             task_type = task['type']
             if task_type not in TASK_CLASSES:
                 self.logger.warning("Can't work with backup's type %s" % task['type'])
                 continue
             handler = TASK_CLASSES[task_type]
             obj = handler.create_task(task)
-            obj.validate()
             obj.create()
 
     @staticmethod
-    def ls(backend_name, backend_conf):
+    def get_backend(backend_name, backend_conf):
+        try:
+            return get_backend(backend_name, backend_conf)
+        except TypeError:
+            raise SBackupException('Incorrect a backend configuration')
+
+    def ls(self, backend_name, backend_conf):
         """
         Return generator
         """
-        try:
-            backend = get_backend(backend_name, backend_conf)
-        except TypeError:
-            raise SBackupException('Incorrect a backend configuration')
-        for item in backend:
+        for item in self.get_backend(backend_name, backend_conf):
             yield item
 
     def restore(self, filename):
         return NotImplementedError
 
-    def delete(self, backup_name):
-        return NotImplementedError
+    def delete(self, backend_name, backend_conf, filename):
+        backend = self.get_backend(backend_name, backend_conf)
+        backend.delete(filename)
 
-    def run(self):
-        return NotImplementedError
+    def delete_older(self, backend_name, backend_conf, retention_period):
+        retention_date = datetime.date.today() - datetime.timedelta(retention_period)
+        backend = self.get_backend(backend_name, backend_conf)
+        backend.delete_older(retention_date)
 
     @staticmethod
     def load_config(filename, logger=None):

@@ -21,7 +21,7 @@ Use a config file
 -----------------
 ::
 
-    sbackup create -s config.yml
+    sbackup create -c config.yml
 
 *Config example*
 ::
@@ -37,8 +37,6 @@ Use a config file
            secret_access_key: YOUR_SECRET_KEY
            bucket: mybucket
 
-
-
 List
 ====
 
@@ -53,5 +51,22 @@ List
 or config file:
 ::
 
-    sbackup list -s config.yml
+    sbackup list -c config.yml
 
+Delete
+======
+
+Delete backup
+-------------
+
+::
+
+    sbackup delete -c config.yml -f backup-2017-01-16-20-20.tar.gz
+
+Delete older than
+-----------------
+::
+
+    sbackup delete -c config.yml --older 15
+
+**Remember, if you run the command without option the files older 30 days will be deleted**

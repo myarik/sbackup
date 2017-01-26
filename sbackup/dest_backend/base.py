@@ -15,15 +15,19 @@ class BackendWrapper(metaclass=abc.ABCMeta):
         return NotImplementedError
 
     @abc.abstractclassmethod
-    def upload(self):
+    def upload(self, src_path, *args, **kwargs):
         return NotImplementedError
 
     @abc.abstractclassmethod
-    def download(self):
+    def download(self, src_filename, dst_dir, *args, **kwargs):
         return NotImplementedError
 
     @abc.abstractclassmethod
-    def delete(self):
+    def delete(self, filename):
+        return NotImplementedError
+
+    @abc.abstractclassmethod
+    def delete_older(self, *args, **kwargs):
         return NotImplementedError
 
 

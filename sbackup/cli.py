@@ -39,6 +39,14 @@ def populate_backend_value(backend_name):
     sys.exit(2)
 
 
+def load_config(file):
+    try:
+        return SBackupCLI.load_config(file, logger)
+    except SBackupException as error:
+        logger.error(error.message)
+        sys.exit(2)
+
+
 @click.group()
 def main():
     pass
@@ -49,17 +57,14 @@ def main():
 @click.option('--src', '-s', multiple=True,  help='Path to source dirs')
 @click.option('-c', '--config', help='path to config file')
 def create(debug, src, config):
+    """create a backup"""
     if not src and not config:
         click.echo("Usage: sbackup create -c config.yml or "
                    "sbackup create -s /var/www/site1 -s /var/www/site2")
         return
     setup_log(debug)
     if config:
-        try:
-            tasks = SBackupCLI.load_config(config, logger)
-        except SBackupException as error:
-            logger.error(error.message)
-            sys.exit(2)
+        tasks = load_config(config)
     else:
         task = dict(sources=src)
         task['type'] = click.prompt(
@@ -70,27 +75,25 @@ def create(debug, src, config):
             type=click.Choice(DST_BACKEND.keys()))
         task['dst_backends'] = populate_backend_value(backend_name)
         tasks = [task]
-    cli = SBackupCLI(tasks)
-    cli.create()
+    obj = SBackupCLI(logger)
+    obj.create(tasks)
 
 
-@click.command(name='list')
+@click.command('list')
 @click.option('--debug', is_flag=True, help='increase output verbosity')
 @click.option('-d', '--destination', help='Destination backend (s3)')
 @click.option('-c', '--config', help='Configuration file')
 def ls(debug, destination, config):
+    """list of backups"""
     setup_log(debug)
+    obj = SBackupCLI(logger)
     if config:
-        try:
-            tasks = SBackupCLI.load_config(config, logger)
-        except SBackupException as error:
-            logger.error(error.message)
-            sys.exit(2)
+        tasks = load_config(config)
         for task in tasks:
             click.echo('Task: %s' % task['task'])
             data = task['dst_backend'].copy()
             backend_name, backend_conf = data.popitem()
-            for item in SBackupCLI.ls(backend_name, backend_conf):
+            for item in obj.ls(backend_name, backend_conf):
                 click.echo(item)
     else:
         if not destination:
@@ -99,8 +102,37 @@ def ls(debug, destination, config):
                 type=click.Choice(DST_BACKEND.keys()))
         data = populate_backend_value(destination.lower())
         backend_name, backend_conf = data.popitem()
-        for item in SBackupCLI.ls(backend_name, backend_conf):
+        for item in obj.ls(backend_name, backend_conf):
             click.echo(item)
+
+
+@click.command()
+@click.option('--debug', is_flag=True, help='increase output verbosity')
+@click.option('-d', '--destination', help='Destination backend (s3)')
+@click.option('-c', '--config', help='Configuration file')
+@click.option('-f', '--file_name', help='A file name')
+@click.option('--older', default=30, metavar='<int>',
+              help='Delete files older than n days')
+def delete(debug, destination, config, file_name, older):
+    """Delete backup"""
+    setup_log(debug)
+    if config:
+        tasks = load_config(config)
+        dst_backends = [task['dst_backend'].copy() for task in tasks]
+    else:
+        if not destination:
+            destination = click.prompt(
+                "Choice destination backend ({})".format('|'.join(DST_BACKEND.keys())),
+                type=click.Choice(DST_BACKEND.keys()))
+        dst_backends = [populate_backend_value(destination.lower())]
+    obj = SBackupCLI()
+    for backend in dst_backends:
+        backend_name, backend_conf = backend.popitem()
+        if file_name:
+            obj.delete(backend_name, backend_conf, file_name)
+        else:
+            obj.delete_older(backend_name, backend_conf, older)
 
 main.add_command(create)
 main.add_command(ls)
+main.add_command(delete)

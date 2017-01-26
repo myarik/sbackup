@@ -89,8 +89,7 @@ class S3Backend(BackendWrapper):
         else:
             self.is_validated = True
 
-    @validated
-    def upload(self, src_path):
+    def upload(self, src_path, *args, **kwargs):
         """
         Upload a file to S3
         Args:
@@ -113,8 +112,7 @@ class S3Backend(BackendWrapper):
             logger.error("Can't upload file to S3", exc_info=True)
             raise S3BackendException("%s" % error)
 
-    @validated
-    def download(self, src_filename, dst_dir, dst_filename=None):
+    def download(self, src_filename, dst_dir, dst_filename=None, **kwargs):
         """
         Download item from AWS
         Args:
@@ -162,16 +160,17 @@ class S3Backend(BackendWrapper):
             logger.error("Can't get objects from S3", exc_info=True)
             raise S3BackendException("%s" % error)
 
-    @validated
-    def last_modified(self):
+    def delete_older(self, retention_date):
         """
-        A generator which yields filename and last modified date
+        Delete files than older
+        Args:
+            retention_date(datetime.date)
         """
         for item in self.bucket.objects.all():
-            yield item.key, item.last_modified
+            if item.last_modified.date() < retention_date:
+                item.delete()
 
-    @validated
-    def delete_file(self, filename):
+    def delete(self, filename):
         for item in self._ls():
             if item.key == filename:
                 try:
@@ -180,18 +179,6 @@ class S3Backend(BackendWrapper):
                     logger.error("Can't delete a object from S3", exc_info=True)
                     raise S3BackendException("Can't delete a object: %s" % error)
                 break
-
-    @validated
-    def delete(self, file_list):
-        if not isinstance(file_list, list):
-            raise S3BackendException("file_list must be a list object")
-        for item in self._ls():
-            if item.key in file_list:
-                try:
-                    item.delete()
-                except ClientError as error:
-                    logger.error("Can't delete a object from S3", exc_info=True)
-                    raise S3BackendException("Can't delete a object: %s" % error)
 
     def __repr__(self):
         return "S3"
