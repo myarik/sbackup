@@ -147,6 +147,7 @@ class S3Backend(BackendWrapper):
                 raise S3BackendException(
                     "Can't download the file %s, error: %s" % (src_filename, error)
                 )
+        return dst_path
 
     def __iter__(self):
         for item in self._ls():
@@ -160,13 +161,34 @@ class S3Backend(BackendWrapper):
             logger.error("Can't get objects from S3", exc_info=True)
             raise S3BackendException("%s" % error)
 
+    def get_last_backup(self, name=None):
+        try:
+            object_generator = self.bucket.objects.all()
+        except ClientError as error:
+            logger.error("Can't get objects from S3", exc_info=True)
+            raise S3BackendException("%s" % error)
+        backup_file = None
+        max_date = None
+        for item in object_generator:
+            if name and not item.key.startswith(name):
+                continue
+            if not max_date or max_date < item.last_modified:
+                max_date, backup_file = item.last_modified, item.key
+        return backup_file
+
     def delete_older(self, retention_date):
         """
         Delete files than older
         Args:
             retention_date(datetime.date)
         """
-        for item in self.bucket.objects.all():
+        try:
+            object_generator = self.bucket.objects.all()
+        except ClientError as error:
+            logger.error("Can't get objects from S3", exc_info=True)
+            raise S3BackendException("%s" % error)
+
+        for item in object_generator:
             if item.last_modified.date() < retention_date:
                 item.delete()
 

@@ -30,6 +30,10 @@ class BackendWrapper(metaclass=abc.ABCMeta):
     def delete_older(self, *args, **kwargs):
         return NotImplementedError
 
+    @abc.abstractclassmethod
+    def get_last_backup(self, *args, **kwargs):
+        return NotImplementedError
+
 
 def validated(function):
     @functools.wraps(function)

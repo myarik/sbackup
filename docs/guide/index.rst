@@ -10,7 +10,7 @@ Example
 -------
 ::
 
-    sbackup create -s /var/www/site1 -s /var/www/site2
+    sbackup create -s /var/www/site1
     Choice backup type (dir): dir
     Choice destination backend (s3): s3
     Enter a Amazon AccessKey: YOUR_ACCESS_KEY
@@ -26,16 +26,14 @@ Use a config file
 *Config example*
 ::
 
-    - task: Backup dirs
+    - name: site1
       type: 'dir'
-      sources:
-        - /var/www/site1
-        - /var/www/site2
+      source: '/var/www/site1'
       dst_backend:
         s3:
            access_key_id: YOUR_ACCESS_KEY
            secret_access_key: YOUR_SECRET_KEY
-           bucket: mybucket
+           bucket: backup_bucket
 
 List
 ====
@@ -46,12 +44,23 @@ List
     Choice destination backend (s3): s3
     Enter a Amazon AccessKey: YOUR_ACCESS_KEY
     Enter a Amazon SecretKey: YOUR_SECRET_KEY
-    Enter a Amazon BucketName: mybucket
+    Enter a Amazon BucketName: backup_bucket
 
 or config file:
 ::
 
     sbackup list -c config.yml
+
+Restore
+=======
+
+::
+
+    sbackup restore -c config.yml
+    Please, choose a restore task: (site1|site2): site1
+    OR
+    sbackup restore -f backup-site1.tar.gz -c config.yml                                                                                                                                        (env: simple_backup)
+    Please, choose a restore task: (site1|site2): site1
 
 Delete
 ======

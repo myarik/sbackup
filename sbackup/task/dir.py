@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import collections
 import datetime
 import logging
 import os
@@ -7,17 +6,32 @@ import shutil
 import tarfile
 import tempfile
 
+from contextlib import contextmanager
+
+from sbackup.utils import get_backup_name
 from sbackup.exception import SBackupValidationError
 from .base import Task, Field, Backend
 
 logger = logging.getLogger(__name__)
 
 
+@contextmanager
+def create_temp_dir(tmp_path=None):
+    if tmp_path:
+        tmp_dir = tempfile.mkdtemp(dir=tmp_path)
+    else:
+        tmp_dir = tempfile.mkdtemp()
+    try:
+        yield tmp_dir
+    finally:
+        shutil.rmtree(tmp_dir)
+
+
 class DirBackupTask(Task):
     """
     The task for backup dirs
     Attributes:
-       sources(list): A list of dirs
+       source(str): A source dir or file
        dst_backend(dict): A backend settings
        backup_name(basestring): Default is backup
        tmp_dir(basestring): A tmp path, default is TMPDIR
@@ -26,7 +40,7 @@ class DirBackupTask(Task):
 
         from sbackup.task import DirBackupTask
         data = {
-            'sources': ['/var/www/site1', '/var/www/site2'],
+            'source': '/var/www/site1',
             'dst_backend': {
                 's3': {
                     'access_key_id': 'key_id',
@@ -50,22 +64,21 @@ class DirBackupTask(Task):
         ...
 
     """
-    sources = Field()
+    source = Field()
     dst_backend = Backend()
-    backup_name = Field(default='backup')
+    name = Field()
     tmp_dir = Field(required=False)
 
     @staticmethod
-    def validate_sources(attr):
-        if not isinstance(attr, collections.Iterable):
-            raise SBackupValidationError('The sources has to be a list')
-        for source_item in attr:
-            if not os.path.exists(source_item):
-                logger.error("Can't find a %s" % source_item)
-                raise SBackupValidationError("Can't find a %s" % source_item)
-            if not os.access(source_item, os.R_OK):
-                logger.error("User don't have access to read a %s" % source_item)
-                raise SBackupValidationError("User don't have access to read a %s" % source_item)
+    def validate_source(attr):
+        if not isinstance(attr, str):
+            raise SBackupValidationError('The sources has to be a sting')
+        if not os.path.exists(attr):
+            logger.error("Can't find a %s" % attr)
+            raise SBackupValidationError("Can't find a %s" % attr)
+        if not os.access(attr, os.R_OK):
+            logger.error("User don't have access to read a %s" % attr)
+            raise SBackupValidationError("User don't have access to read a %s" % attr)
         return attr
 
     @staticmethod
@@ -77,6 +90,9 @@ class DirBackupTask(Task):
             logger.error("User don't have access to read a %s" % attr)
             raise SBackupValidationError("User don't have access to read a %s" % attr)
         return attr
+
+    def get_backup_name(self):
+        return get_backup_name(self.name)
 
     def make_tarfile(self, tar_dir):
         """
@@ -91,14 +107,13 @@ class DirBackupTask(Task):
             SBackupValidationError: Exception if backup already exists.
         """
         output_filename = os.path.join(tar_dir, "{name}-{time}.tar.gz".format(
-            name=self.backup_name,
+            name=self.get_backup_name(),
             time=datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')
         ))
         logger.debug("Create a temporary tar file: %s" % output_filename)
         try:
             with tarfile.open(output_filename, "x:gz") as tar:
-                for source in self.sources:
-                    tar.add(source, arcname=os.path.basename(source))
+                tar.add(self.source, arcname=os.path.basename(self.source))
         except FileExistsError:
             logger.error("Can't create a temporary tar file", exc_info=True)
             raise SBackupValidationError("Can't create a tarfile")
@@ -115,14 +130,29 @@ class DirBackupTask(Task):
             backend=str(self.dst_backend)
         ))
 
+    def extract(self, src_file):
+        tar = tarfile.open(src_file)
+        shutil.rmtree(self.source)
+        tar.extractall(path=os.path.dirname(self.source))
+
     def create(self):
         self.validate()
-        if self.tmp_dir:
-            tar_dir = tempfile.mkdtemp(dir=self.tmp_dir)
-        else:
-            tar_dir = tempfile.mkdtemp()
-        try:
-            backup_file = self.make_tarfile(tar_dir)
+        with create_temp_dir(self.tmp_dir) as tmp_dir:
+            backup_file = self.make_tarfile(tmp_dir)
             self.upload_backup(backup_file)
-        finally:
-            shutil.rmtree(tar_dir)
+
+    def restore(self, backup_file):
+        if not backup_file:
+            backup_file = self.dst_backend.get_last_backup(name=self.get_backup_name())
+            if not backup_file:
+                raise SBackupValidationError("Backup doesn't exist in the backend")
+        logger.debug("Start download the file {file} to {backend}".format(
+            file=backup_file,
+            backend=str(self.dst_backend)
+        ))
+        with create_temp_dir(self.tmp_dir) as tmp_dir:
+            src_file = self.dst_backend.download(backup_file, tmp_dir)
+            logger.debug("Extract the file {file}".format(
+                file=backup_file
+            ))
+            self.extract(src_file)

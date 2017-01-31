@@ -2,6 +2,7 @@
 import click
 import sys
 import logging
+import os
 
 from . import (
     SBackupCLI,
@@ -54,29 +55,31 @@ def main():
 
 @click.command()
 @click.option('--debug', is_flag=True, help='increase output verbosity')
-@click.option('--src', '-s', multiple=True,  help='Path to source dirs')
+@click.option('--src', '-s', help='Path to source dirs')
+@click.option('-d', '--destination', help='Destination backend (s3)')
 @click.option('-c', '--config', help='path to config file')
-def create(debug, src, config):
+def create(debug, src, destination, config):
     """create a backup"""
     if not src and not config:
         click.echo("Usage: sbackup create -c config.yml or "
-                   "sbackup create -s /var/www/site1 -s /var/www/site2")
+                   "sbackup create -s /var/www/site1")
         return
     setup_log(debug)
     if config:
         tasks = load_config(config)
     else:
-        task = dict(sources=src)
+        task = dict(source=src)
         task['type'] = click.prompt(
             "Choice backup type (%s)" % '|'.join(TASK_CLASSES.keys()),
             type=click.Choice(TASK_CLASSES.keys()))
-        backend_name = click.prompt(
-            "Choice destination backend (%s)" % '|'.join(DST_BACKEND.keys()),
-            type=click.Choice(DST_BACKEND.keys()))
-        task['dst_backends'] = populate_backend_value(backend_name)
+        if not destination:
+            destination = click.prompt(
+                "Choice destination backend (%s)" % '|'.join(DST_BACKEND.keys()),
+                type=click.Choice(DST_BACKEND.keys()))
+        task['dst_backend'] = populate_backend_value(destination.lower())
+        task['name'] = os.path.basename(src)
         tasks = [task]
-    obj = SBackupCLI(logger)
-    obj.create(tasks)
+    SBackupCLI().create(tasks, logger)
 
 
 @click.command('list')
@@ -86,14 +89,13 @@ def create(debug, src, config):
 def ls(debug, destination, config):
     """list of backups"""
     setup_log(debug)
-    obj = SBackupCLI(logger)
     if config:
         tasks = load_config(config)
         for task in tasks:
-            click.echo('Task: %s' % task['task'])
+            click.echo('Task: %s' % task['name'])
             data = task['dst_backend'].copy()
             backend_name, backend_conf = data.popitem()
-            for item in obj.ls(backend_name, backend_conf):
+            for item in SBackupCLI().ls(backend_name, backend_conf):
                 click.echo(item)
     else:
         if not destination:
@@ -102,7 +104,7 @@ def ls(debug, destination, config):
                 type=click.Choice(DST_BACKEND.keys()))
         data = populate_backend_value(destination.lower())
         backend_name, backend_conf = data.popitem()
-        for item in obj.ls(backend_name, backend_conf):
+        for item in SBackupCLI().ls(backend_name, backend_conf):
             click.echo(item)
 
 
@@ -110,10 +112,10 @@ def ls(debug, destination, config):
 @click.option('--debug', is_flag=True, help='increase output verbosity')
 @click.option('-d', '--destination', help='Destination backend (s3)')
 @click.option('-c', '--config', help='Configuration file')
-@click.option('-f', '--file_name', help='A file name')
+@click.option('-f', '--backup_file', help='A backup file')
 @click.option('--older', default=30, metavar='<int>',
               help='Delete files older than n days')
-def delete(debug, destination, config, file_name, older):
+def delete(debug, destination, config, backup_file, older):
     """Delete backup"""
     setup_log(debug)
     if config:
@@ -125,14 +127,33 @@ def delete(debug, destination, config, file_name, older):
                 "Choice destination backend ({})".format('|'.join(DST_BACKEND.keys())),
                 type=click.Choice(DST_BACKEND.keys()))
         dst_backends = [populate_backend_value(destination.lower())]
-    obj = SBackupCLI()
+
     for backend in dst_backends:
         backend_name, backend_conf = backend.popitem()
-        if file_name:
-            obj.delete(backend_name, backend_conf, file_name)
+        if backup_file:
+            SBackupCLI().delete(backend_name, backend_conf, backup_file)
         else:
-            obj.delete_older(backend_name, backend_conf, older)
+            SBackupCLI().delete_older(backend_name, backend_conf, older)
+
+
+@click.command()
+@click.option('--debug', is_flag=True, help='increase output verbosity')
+@click.option('-c', '--config', help='Configuration file', required=True)
+@click.option('-f', '--backup_file', help='A backup file')
+def restore(debug, config, backup_file):
+    setup_log(debug)
+    tasks = load_config(config)
+    tasks_name = {}
+    for position, item in enumerate(tasks):
+        tasks_name[item['name']] = position
+    task = click.prompt(
+        "Please, choose a restore task: ({})".format('|'.join(
+            tasks_name.keys())),
+        type=click.Choice(tasks_name.keys()))
+    restore_task = tasks[tasks_name[task]]
+    SBackupCLI().restore(restore_task, backup_file)
 
 main.add_command(create)
 main.add_command(ls)
 main.add_command(delete)
+main.add_command(restore)

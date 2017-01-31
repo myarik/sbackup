@@ -14,45 +14,6 @@ from sbackup.dest_backend import get_backend
 
 
 class SBackupCLI(object):
-    def __init__(self, logger=None):
-        self.logger = logger or logging.getLogger(__name__)
-
-    def create(self, tasks):
-        for task in tasks:
-            task_type = task['type']
-            if task_type not in TASK_CLASSES:
-                self.logger.warning("Can't work with backup's type %s" % task['type'])
-                continue
-            handler = TASK_CLASSES[task_type]
-            obj = handler.create_task(task)
-            obj.create()
-
-    @staticmethod
-    def get_backend(backend_name, backend_conf):
-        try:
-            return get_backend(backend_name, backend_conf)
-        except TypeError:
-            raise SBackupException('Incorrect a backend configuration')
-
-    def ls(self, backend_name, backend_conf):
-        """
-        Return generator
-        """
-        for item in self.get_backend(backend_name, backend_conf):
-            yield item
-
-    def restore(self, filename):
-        return NotImplementedError
-
-    def delete(self, backend_name, backend_conf, filename):
-        backend = self.get_backend(backend_name, backend_conf)
-        backend.delete(filename)
-
-    def delete_older(self, backend_name, backend_conf, retention_period):
-        retention_date = datetime.date.today() - datetime.timedelta(retention_period)
-        backend = self.get_backend(backend_name, backend_conf)
-        backend.delete_older(retention_date)
-
     @staticmethod
     def load_config(filename, logger=None):
         if not os.path.exists(filename):
@@ -78,3 +39,49 @@ class SBackupCLI(object):
                 "No values found in file %s" % filename
             )
         return config
+
+    @staticmethod
+    def get_handler(task_type, logger=None):
+        if task_type not in TASK_CLASSES:
+            error_msg = "Can't work with backup's type {}".format(task_type)
+            if logger:
+                logger.error(error_msg)
+            raise SBackupException(error_msg)
+        return TASK_CLASSES[task_type]
+
+    @staticmethod
+    def get_backend(backend_name, backend_conf):
+        try:
+            return get_backend(backend_name, backend_conf)
+        except TypeError:
+            raise SBackupException('Incorrect a backend configuration')
+
+    def create(self, tasks, logger=None):
+        for task in tasks:
+            try:
+                handler = self.get_handler(task['type'], logger)
+            except SBackupException:
+                continue
+            obj = handler.create_task(task)
+            obj.create()
+
+    def ls(self, backend_name, backend_conf):
+        """
+        Return generator
+        """
+        for item in self.get_backend(backend_name, backend_conf):
+            yield item
+
+    def restore(self, task, backup_file, logger=None):
+        handler = self.get_handler(task['type'], logger)
+        obj = handler.create_task(task)
+        obj.restore(backup_file)
+
+    def delete(self, backend_name, backend_conf, filename):
+        backend = self.get_backend(backend_name, backend_conf)
+        backend.delete(filename)
+
+    def delete_older(self, backend_name, backend_conf, retention_period):
+        retention_date = datetime.date.today() - datetime.timedelta(retention_period)
+        backend = self.get_backend(backend_name, backend_conf)
+        backend.delete_older(retention_date)
