@@ -79,3 +79,17 @@ Delete older than
     sbackup delete -c config.yml --older 15
 
 **Remember, if you run the command without option the files older 30 days will be deleted**
+
+Download
+========
+
+::
+
+    sbackup download -f backup.tar.gz -dst /home/data -c config.yml
+    or
+    sbackup download -f backup.tar.gz -dst /home/data
+    Choice destination backend (s3): s3
+    Enter a Amazon AccessKey: YOUR_ACCESS_KEY
+    Enter a Amazon SecretKey: YOUR_SECRET_KEY
+    Enter a Amazon BucketName: backup_bucket
+

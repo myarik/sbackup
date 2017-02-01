@@ -153,7 +153,28 @@ def restore(debug, config, backup_file):
     restore_task = tasks[tasks_name[task]]
     SBackupCLI().restore(restore_task, backup_file)
 
+
+@click.command()
+@click.option('--debug', is_flag=True, help='increase output verbosity')
+@click.option('-c', '--config', help='Configuration file')
+@click.option('-f', '--backup_file', help='A backup file', required=True)
+@click.option('-dst', '--dst_path', help='A paths to upload', required=True)
+def download(debug, config, backup_file, dst_path):
+    setup_log(debug)
+    if config:
+        tasks = load_config(config)
+        dst_backends = [task['dst_backend'].copy() for task in tasks]
+    else:
+        destination = click.prompt(
+            "Choice destination backend (%s)" % '|'.join(DST_BACKEND.keys()),
+            type=click.Choice(DST_BACKEND.keys()))
+        dst_backends = [populate_backend_value(destination.lower())]
+    for backend in dst_backends:
+        backend_name, backend_conf = backend.popitem()
+        SBackupCLI().download(backend_name, backend_conf, backup_file, dst_path)
+
 main.add_command(create)
 main.add_command(ls)
 main.add_command(delete)
 main.add_command(restore)
+main.add_command(download)

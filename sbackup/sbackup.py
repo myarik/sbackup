@@ -85,3 +85,7 @@ class SBackupCLI(object):
         retention_date = datetime.date.today() - datetime.timedelta(retention_period)
         backend = self.get_backend(backend_name, backend_conf)
         backend.delete_older(retention_date)
+
+    def download(self, backend_name, backend_conf, backup_file, dst_path):
+        backend = self.get_backend(backend_name, backend_conf)
+        backend.download(backup_file, dst_path)
