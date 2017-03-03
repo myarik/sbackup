@@ -4,6 +4,9 @@ import six
 
 
 class SBackupException(Exception):
+    """
+    Package Exception
+    """
 
     def __init__(self, message="", content=None):
         self.message = six.text_type(message)

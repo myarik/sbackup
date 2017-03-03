@@ -14,6 +14,9 @@ from .task import TASK_CLASSES
 
 
 class SBackupCLI(object):
+    """
+        Cli commands handler
+    """
     @staticmethod
     def load_config(filename, logger=None):
         if not os.path.exists(filename):

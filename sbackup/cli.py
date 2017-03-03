@@ -18,6 +18,9 @@ LOG_FORMAT = "%(asctime)s %(levelname)s %(message)s"
 
 
 def prompt_s3_data():
+    """
+    Populate AWS data
+    """
     data = dict()
     data['access_key_id'] = click.prompt("Enter a Amazon AccessKey")
     data['secret_access_key'] = click.prompt("Enter a Amazon SecretKey")

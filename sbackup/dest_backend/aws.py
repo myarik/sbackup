@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 class S3BackendException(SBackupException):
+    """
+    S3Backend Exception
+    """
     pass
 
 
@@ -162,6 +165,12 @@ class S3Backend(BackendWrapper):
             raise S3BackendException("%s" % error)
 
     def get_last_backup(self, name=None):
+        """
+        Get last backup
+
+        Args:
+            name(srt)
+        """
         try:
             object_generator = self.bucket.objects.all()
         except ClientError as error:

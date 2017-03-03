@@ -6,6 +6,9 @@ from sbackup.exception import SBackupValidationError
 
 
 class BackendWrapper(metaclass=abc.ABCMeta):
+    """
+        BackendWrapper
+    """
 
     def validate(self):
         return NotImplementedError('subclasses of BackendWrapper may require a validate() method')
