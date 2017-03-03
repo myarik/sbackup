@@ -4,12 +4,10 @@ import sys
 import logging
 import os
 
-from . import (
-    SBackupCLI,
-    SBackupException,
-    TASK_CLASSES,
-    DST_BACKEND
-)
+from .sbackup import SBackupCLI
+from .exception import SBackupException
+from .task import TASK_CLASSES
+from .dest_backend import DST_BACKEND
 
 
 logger = logging.getLogger(__name__)
