@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division, print_function, unicode_literals)
 
+import datetime
 import os
 import stat
-import logging
-import datetime
+import concurrent.futures
+
 import yaml
 
-from .task import TASK_CLASSES
-from .exception import SBackupException
-
 from sbackup.dest_backend import get_backend
+from .exception import SBackupException
+from .task import TASK_CLASSES
 
 
 class SBackupCLI(object):
@@ -56,14 +56,25 @@ class SBackupCLI(object):
         except TypeError:
             raise SBackupException('Incorrect a backend configuration')
 
-    def create(self, tasks, logger=None):
-        for task in tasks:
-            try:
-                handler = self.get_handler(task['type'], logger)
-            except SBackupException:
-                continue
-            obj = handler.create_task(task)
-            obj.create()
+    def create(self, tasks, logger=None, executor_cls=None, max_workers=2):
+        executor_cls = executor_cls or concurrent.futures.ThreadPoolExecutor
+        future_tasks = {}
+        with executor_cls(max_workers=max_workers) as executor:
+            for task in tasks:
+                try:
+                    handler = self.get_handler(task['type'], logger)
+                except SBackupException:
+                    continue
+                obj = handler.create_task(task)
+                future_tasks[executor.submit(obj.create)] = task['name']
+            for future in concurrent.futures.as_completed(future_tasks):
+                task_name = future_tasks[future]
+                try:
+                    future.result()
+                except Exception as exc:
+                    print('%s generated an exception: %s' % (task_name, exc))
+                else:
+                    print('Task %s, finished' % task_name)
 
     def ls(self, backend_name, backend_conf):
         """
