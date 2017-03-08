@@ -97,3 +97,6 @@ ENV/
 
 .idea/
 .idea/workspace.xml
+
+# log
+ipython_log.*

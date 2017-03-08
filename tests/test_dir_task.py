@@ -2,6 +2,7 @@
 from unittest import mock
 
 import pytest
+
 from sbackup.exception import SBackupValidationError
 from sbackup.task import DirBackupTask
 
@@ -12,7 +13,7 @@ def fake_dir(tmpdir_factory):
     return dir
 
 
-def test_validation():
+def test_source_validation():
     with pytest.raises(AttributeError):
         obj = DirBackupTask.create_task({'type': 'dir'})
         obj.validate()
@@ -20,8 +21,8 @@ def test_validation():
     with pytest.raises(SBackupValidationError):
         obj = DirBackupTask.create_task({
             'type': 'dir',
-            'source_dirs': ['/test/fake_dir/aXsTrasL'],
-            'dest_backends': {
+            'sources': ['/test/fake_dir/aXsTrasL'],
+            'dst_backend': {
                 's3': {
                     'access_key_id': 'asd1123sds',
                     'secret_access_key': 'Sdd3qsdasd',
@@ -37,8 +38,8 @@ def test_backend_validation(fake_dir):
     with pytest.raises(SBackupValidationError):
         obj = DirBackupTask.create_task({
             'type': 'dir',
-            'source_dirs': ['/test/fake_dir/aXsTrasL'],
-            'dest_backends': {
+            'sources': ['/test/fake_dir/aXsTrasL'],
+            'dst_backend': {
                 's3': {
                     'secret_access_key': 'Sdd3qsdasd',
                     'bucket': 'test'
@@ -49,8 +50,8 @@ def test_backend_validation(fake_dir):
     with mock.patch('sbackup.dest_backend.aws.S3Backend.validate') as mock_validate:
         obj = DirBackupTask.create_task({
             'type': 'dir',
-            'source_dirs': [fake_dir.dirname, ],
-            'dest_backends': {
+            'sources': [fake_dir.dirname, ],
+            'dst_backend': {
                 's3': {
                     'access_key_id': 'asd1123sds',
                     'secret_access_key': 'Sdd3qsdasd',

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from sbackup.exception import SBackupValidationError
-from sbackup.dest_backend import DEST_BACKENDS
+from sbackup.dest_backend import get_backend
 
 
 class Field(object):
@@ -14,7 +14,7 @@ class Field(object):
         if instance is None:
             return self
         value = getattr(instance, self.internal_name, self.default)
-        if value is None and self.required:
+        if self.required and (value is None or value == list()):
             raise AttributeError("The field %s is required" % self.name)
         return value
 
@@ -22,27 +22,22 @@ class Field(object):
         setattr(instance, self.internal_name, value)
 
 
-class DestField(Field):
-    def __get__(self, instance, owner):
-        value = super(DestField, self).__get__(instance, owner)
-        if value == list():
-            raise AttributeError("The field %s is required" % self.name)
-        return value
+class Backend(Field):
 
     def __set__(self, instance, value):
         if not isinstance(value, dict):
-            raise SBackupValidationError('The DestField has to be a dict')
-        result = []
-        for backend_name, backend_conf in value.items():
-            obj = DEST_BACKENDS[backend_name]
-            if obj:
-                try:
-                    backend = obj(**backend_conf)
-                except TypeError:
-                    raise SBackupValidationError('Configuration is incorrect')
-                backend.validate()
-                result.append(backend)
-        setattr(instance, self.internal_name, result)
+            raise SBackupValidationError(
+                'The %s has to be a dict' % self.__class__.__name__
+            )
+        data = value.copy()
+        backend_name, backend_conf = data.popitem()
+        try:
+            backend = get_backend(backend_name, backend_conf)
+        except TypeError:
+            raise SBackupValidationError('Incorrect a backend configuration')
+        if backend is None:
+            raise SBackupValidationError('Incorrect a backend configuration')
+        setattr(instance, self.internal_name, backend)
 
 
 class TaskMetaclass(type):
@@ -72,11 +67,15 @@ class Task(object, metaclass=TaskMetaclass):
         errors = dict()
         for field in self.get_fields():
             validate_method = getattr(self, 'validate_' + field, None)
-            try:
-                if validate_method and callable(validate_method):
-                    validate_method(getattr(self, field))
-            except SBackupValidationError as error:
-                errors[field] = error.message
+            attr = getattr(self, field)
+            if attr is not None:
+                try:
+                    if validate_method and callable(validate_method):
+                        setattr(self, field, validate_method(attr))
+                    if callable(getattr(attr, 'validate', None)):
+                        attr.validate()
+                except SBackupValidationError as error:
+                    errors[field] = error.message
         if errors:
             raise SBackupValidationError(
                 message="Can't validate fields: %s" % (','.join(errors.keys())),
@@ -102,3 +101,6 @@ class Task(object, metaclass=TaskMetaclass):
                 continue
             setattr(obj, field, value)
         return obj
+
+    def run(self):
+        return NotImplementedError

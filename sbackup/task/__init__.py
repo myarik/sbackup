@@ -9,4 +9,5 @@ __all__ = (
 _task_classes = (
     ('dir', DirBackupTask),
 )
+
 TASK_CLASSES = dict(_task_classes)

@@ -1,13 +1,41 @@
 # -*- coding: utf-8 -*-
 import functools
+import abc
 
 from sbackup.exception import SBackupValidationError
 
 
-class BackendWrapper(object):
+class BackendWrapper(metaclass=abc.ABCMeta):
+    """
+        BackendWrapper
+    """
 
     def validate(self):
         return NotImplementedError('subclasses of BackendWrapper may require a validate() method')
+
+    @abc.abstractclassmethod
+    def __iter__(self):
+        return NotImplementedError
+
+    @abc.abstractclassmethod
+    def upload(self, src_path, *args, **kwargs):
+        return NotImplementedError
+
+    @abc.abstractclassmethod
+    def download(self, src_filename, dst_dir, *args, **kwargs):
+        return NotImplementedError
+
+    @abc.abstractclassmethod
+    def delete(self, filename):
+        return NotImplementedError
+
+    @abc.abstractclassmethod
+    def delete_older(self, *args, **kwargs):
+        return NotImplementedError
+
+    @abc.abstractclassmethod
+    def get_last_backup(self, *args, **kwargs):
+        return NotImplementedError
 
 
 def validated(function):
