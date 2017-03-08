@@ -17,7 +17,7 @@ setup(
     name='sbackup',
     author_email=__author_email__,
     description='Simple backup script',
-    packages=find_packages(),
+    packages=["sbackup"],
     install_requires=['click', 'PyYAML', 'boto3'],
     include_package_data=True,
     entry_points={
