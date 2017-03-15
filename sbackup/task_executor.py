@@ -1,48 +1,17 @@
 # -*- coding: utf-8 -*-
-from __future__ import (absolute_import, division, print_function, unicode_literals)
-
 import datetime
-import os
-import stat
 import concurrent.futures
 
-import yaml
 
 from sbackup.dest_backend import get_backend
 from .exception import SBackupException
 from .task import TASK_CLASSES
 
 
-class SBackupCLI(object):
+class TaskExecutor:
     """
-        Cli commands handler
+    This is the main worker class for the executor task
     """
-    @staticmethod
-    def load_config(filename, logger=None):
-        if not os.path.exists(filename):
-            raise SBackupException(
-                "Can't find a config file \"%s\"" % filename
-            )
-        if not (os.path.isfile(filename) or stat.S_ISFIFO(os.stat(filename).st_mode)):
-            raise SBackupException(
-                "the config: %s does not appear to be a file" % filename
-            )
-        try:
-            with open(filename, 'rt') as file_config:
-                config = yaml.safe_load(file_config)
-        except yaml.YAMLError as error:
-            msg = "Can't load config file: %s" % error
-            if logger:
-                logger.error(msg)
-            raise SBackupException(
-                "the config: %s does not a yaml file" % filename
-            )
-        if config is None:
-            raise SBackupException(
-                "No values found in file %s" % filename
-            )
-        return config
-
     @staticmethod
     def get_handler(task_type, logger=None):
         if task_type not in TASK_CLASSES:
