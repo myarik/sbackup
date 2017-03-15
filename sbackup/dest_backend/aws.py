@@ -147,10 +147,10 @@ class S3Backend(BackendWrapper):
             S3BackendException
         """
         if not src_path:
-            logger.error("The src_path does not set")
+            logger.debug("The src_path does not set")
             raise S3BackendException('Please set a path')
         if not os.path.exists(src_path):
-            logger.error("Can't find a path %s" % src_path)
+            logger.debug("Can't find a path %s" % src_path)
             raise S3BackendException("Can't find a path")
         filename = os.path.basename(src_path)
         name = self._normalize_name(filename)
@@ -158,7 +158,7 @@ class S3Backend(BackendWrapper):
             logger.debug("Start uploading the %s to S3" % filename)
             self.bucket.upload_file(src_path, name)
         except S3UploadFailedError as error:
-            logger.error("Can't upload file to S3", exc_info=True)
+            logger.debug("Can't upload file to S3", exc_info=True)
             raise S3BackendException("%s" % error)
 
     def download(self, src_filename, dst_dir, dst_filename=None, **kwargs):
@@ -187,7 +187,7 @@ class S3Backend(BackendWrapper):
             logger.debug("Start download the %s" % src_filename)
             self.bucket.download_file(name, dst_path)
         except ClientError as error:
-            logger.error("Can't download file from S3", exc_info=True)
+            logger.debug("Can't download file from S3", exc_info=True)
             error_code = int(error.response['Error']['Code'])
             if error_code == 404:
                 raise S3BackendException(
@@ -214,7 +214,7 @@ class S3Backend(BackendWrapper):
                 if len(parts) == 1:
                     yield item, parts[0]
         except ClientError as error:
-            logger.error("Can't get objects from S3", exc_info=True)
+            logger.debug("Can't get objects from S3", exc_info=True)
             raise S3BackendException("%s" % error)
 
     def get_last_backup(self, name=None):
@@ -249,7 +249,7 @@ class S3Backend(BackendWrapper):
                 try:
                     item.delete()
                 except ClientError as error:
-                    logger.error("Can't delete a object from S3", exc_info=True)
+                    logger.debug("Can't delete a object from S3", exc_info=True)
                     raise S3BackendException("Can't delete a object: %s" % error)
                 break
 

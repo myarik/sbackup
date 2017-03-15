@@ -34,6 +34,7 @@ Use a config file
            access_key_id: YOUR_ACCESS_KEY
            secret_access_key: YOUR_SECRET_KEY
            bucket: backup_bucket
+           location: site1  # optional
 
 List
 ====
