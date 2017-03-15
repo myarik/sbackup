@@ -1,47 +1,51 @@
 # -*- coding: utf-8 -*-
-from __future__ import (absolute_import, division, print_function, unicode_literals)
-
-import datetime
-import os
-import stat
 import concurrent.futures
-
-import yaml
+import datetime
+from collections import MutableMapping
 
 from sbackup.dest_backend import get_backend
 from .exception import SBackupException
 from .task import TASK_CLASSES
 
 
-class SBackupCLI(object):
+class TaskExecutor:
     """
-        Cli commands handler
+    This is the main worker class for the executor task
     """
+
+    def __init__(self, tasks):
+        """
+        Args:
+            : An open Bigtable Table instance.
+            : A sequence of strings representing the key of each table row
+                    to fetch.
+        Returns:
+            For example:
+
+        Raises:
+            IOError: An error occurred accessing the bigtable. Table object.
+        """
+        if tasks is None:
+            raise SBackupException("Can't find a settings")
+        elif not isinstance(tasks, list):
+            data = [tasks]
+        else:
+            data = tasks
+        for item in data:
+            if not isinstance(item, MutableMapping):
+                raise SBackupException("Config file must contain either a dictionary of variables, "
+                                       "or a list of dictionaries. Got: %s (%s)" % (tasks, type(tasks)))
+            self.validate_task(item)
+        self.tasks = tasks
+
     @staticmethod
-    def load_config(filename, logger=None):
-        if not os.path.exists(filename):
-            raise SBackupException(
-                "Can't find a config file \"%s\"" % filename
-            )
-        if not (os.path.isfile(filename) or stat.S_ISFIFO(os.stat(filename).st_mode)):
-            raise SBackupException(
-                "the config: %s does not appear to be a file" % filename
-            )
-        try:
-            with open(filename, 'rt') as file_config:
-                config = yaml.safe_load(file_config)
-        except yaml.YAMLError as error:
-            msg = "Can't load config file: %s" % error
-            if logger:
-                logger.error(msg)
-            raise SBackupException(
-                "the config: %s does not a yaml file" % filename
-            )
-        if config is None:
-            raise SBackupException(
-                "No values found in file %s" % filename
-            )
-        return config
+    def validate_task(task):
+        if not task.get('name'):
+            raise SBackupException("Incorrect config, can't find a task name")
+        if not task.get('dst_backend'):
+            raise SBackupException("Incorrect config, can't find a dst_backend")
+        if not isinstance(task['dst_backend'], MutableMapping):
+            raise SBackupException("The dst_backend value must be a dictionary")
 
     @staticmethod
     def get_handler(task_type, logger=None):
@@ -59,11 +63,11 @@ class SBackupCLI(object):
         except TypeError:
             raise SBackupException('Incorrect a backend configuration')
 
-    def create(self, tasks, logger=None, executor_cls=None, max_workers=2):
+    def create(self, logger=None, executor_cls=None, max_workers=2):
         executor_cls = executor_cls or concurrent.futures.ThreadPoolExecutor
         future_tasks = {}
         with executor_cls(max_workers=max_workers) as executor:
-            for task in tasks:
+            for task in self.tasks:
                 try:
                     handler = self.get_handler(task['type'], logger)
                 except SBackupException:
