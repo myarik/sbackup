@@ -3,18 +3,21 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Sbackup documentation
+SBackup documentation
 =====================
-Sbackup is a backup system, which allows backup data to the cloud storage.
-Sbackup provides an easy way to backup data and suitable for regular backups.
+SBackup provides an easy way to backup data to the cloud storage and suitable for regular backups.
+It is integrated with AWS S3 storage provider
+This document is the complete guide to the SBackup deployment, configuration, and usage.
 
+Support:
+
+- Directory backup
 
 Quick Start
 ===========
 .. toctree::
 
    guide/quickstart
-
 
 Installation
 ============

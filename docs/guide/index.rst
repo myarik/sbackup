@@ -4,21 +4,10 @@ Usage
 
 Create backup
 =============
-This command creates a backup archive containing all paths specified
+This command creates a backup
 
 Example
 -------
-::
-
-    sbackup create -s /var/www/site1
-    Choice backup type (dir): dir
-    Choice destination backend (s3): s3
-    Enter a Amazon AccessKey: YOUR_ACCESS_KEY
-    Enter a Amazon SecretKey: YOUR_SECRET_KEY
-    Enter a Amazon BucketName: mybucket
-
-Use a config file
------------------
 ::
 
     sbackup create -c config.yml
@@ -38,40 +27,35 @@ Use a config file
 
 List
 ====
+This command lists of backups
 
-::
-
-    sbackup list                                                                                                                                                                                                                                              (env: simple_backup)
-    Choice destination backend (s3): s3
-    Enter a Amazon AccessKey: YOUR_ACCESS_KEY
-    Enter a Amazon SecretKey: YOUR_SECRET_KEY
-    Enter a Amazon BucketName: backup_bucket
-
-or config file:
 ::
 
     sbackup list -c config.yml
 
+
 Restore
 =======
+This command extracts the contents of an archive to the source path.
 
 ::
 
+    sbackup restore -c config.yml -f backup-test-2017-01-11-10-10.tar.gz
+
+    OR restore from last backup
+
     sbackup restore -c config.yml
-    Please, choose a restore task: (site1|site2): site1
-    OR
-    sbackup restore -f backup-site1.tar.gz -c config.yml                                                                                                                                        (env: simple_backup)
-    Please, choose a restore task: (site1|site2): site1
 
 Delete
 ======
+This command deletes an archive from the storage. Also, this command deletes older backups.
 
 Delete backup
 -------------
 
 ::
 
-    sbackup delete -c config.yml -f backup-2017-01-16-20-20.tar.gz
+    sbackup delete -c config.yml -f backup-test-2017-01-11-10-10.tar.gz
 
 Delete older than
 -----------------
@@ -83,14 +67,7 @@ Delete older than
 
 Download
 ========
-
+This command upload an archive from the storage.
 ::
 
-    sbackup download -f backup.tar.gz -dst /home/data -c config.yml
-    or
-    sbackup download -f backup.tar.gz -dst /home/data
-    Choice destination backend (s3): s3
-    Enter a Amazon AccessKey: YOUR_ACCESS_KEY
-    Enter a Amazon SecretKey: YOUR_SECRET_KEY
-    Enter a Amazon BucketName: backup_bucket
-
+    sbackup download -f backup-test-2017-01-11-10-10.tar.gz -dst /home/data -c config.yml
